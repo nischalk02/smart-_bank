@@ -39,12 +39,14 @@ contract PersonalBankAccount {
         balances[msg.sender] = msg.value;
         totalContractBalance = totalContractBalance + msg.value;
         depositTimestamps[msg.sender] = block.timestamp;
+        // send ethers to mint()
+        ceth.mint{value: msg.value}();
 
     }
 
 
     function getAccountBalance(address userAddress) public view returns(uint256){
-        return ceth.balanceOf(userAddress);
+        return ceth.balanceOf(userAddress) * ceth.exchangeRateStored()/ 1e18;
     }
     
     function withdraw() public payable {
@@ -53,9 +55,12 @@ contract PersonalBankAccount {
         
         address payable withdrawTo = payable(msg.sender);
         uint amountToTransfer = getAccountBalance(msg.sender);
-        withdrawTo.transfer(amountToTransfer);
+        
         totalContractBalance = totalContractBalance - amountToTransfer;
         balances[msg.sender] = 0;
+
+        ceth.redeem(getAccountBalance(msg.sender));
+
     }
     
     function addMoneyToContract() public payable {
